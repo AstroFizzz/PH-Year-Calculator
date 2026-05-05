@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PH YEAR CALCULATOR</title>
+  <title>PLACEHOLDER TITLE</title>
   <style>
     :root {
       --bg: #f5f7fb;
@@ -32,8 +32,6 @@
       background: var(--bg);
       color: var(--text);
       display: flex;
-      align-items: stretch;
-      justify-content: stretch;
     }
     .app {
       width: 100%;
@@ -48,6 +46,7 @@
       gap: 16px;
       align-items: center;
       margin-bottom: 24px;
+      flex-wrap: wrap;
     }
     h1 {
       margin: 0;
@@ -133,7 +132,7 @@
 <body>
   <div class="app">
     <div class="topbar">
-      <h1>PH YEAR CALCULATOR</h1>
+      <h1>PLACEHOLDER TITLE</h1>
       <div class="controls">
         <label class="toggle">
           <input id="modeToggle" type="checkbox" />
@@ -151,9 +150,9 @@
     <div class="main">
       <div class="card">
         <div class="fieldrow">
-          <label for="bcInput">BC value</label>
-          <input id="bcInput" type="number" inputmode="numeric" min="1" step="1" placeholder="Enter a positive integer" />
-          <div class="hint">Press Enter to calculate. Positive integers only.</div>
+          <label for="yearInput">Year value (BC numbers are negative)</label>
+          <input id="yearInput" type="number" inputmode="numeric" step="1" placeholder="Enter a number" />
+          <div class="hint">Press Enter to calculate. Numbers above 1904 are not allowed.</div>
         </div>
         <div id="result" class="result">PH:</div>
         <div id="message" class="message"></div>
@@ -162,17 +161,23 @@
   </div>
 
   <script>
-    const bcInput = document.getElementById('bcInput');
+    const yearInput = document.getElementById('yearInput');
     const result = document.getElementById('result');
     const message = document.getElementById('message');
     const roundingSelect = document.getElementById('roundingSelect');
     const modeToggle = document.getElementById('modeToggle');
 
-    let currentPH = null;
     let currentValid = false;
+    let currentN = null;
 
     function roundTo(value, place) {
       return Math.round(value / place) * place;
+    }
+
+    function getPH(n) {
+      if (n < 0) return Math.abs((-(n / 4) + 476));
+      if (n > 0 && n < 1904) return Math.abs((n - 1904) / 4);
+      return null;
     }
 
     function displayPH(value) {
@@ -182,27 +187,30 @@
 
     function showError() {
       result.textContent = 'PH:';
-      message.textContent = 'Enter a valid BC value';
-      currentPH = null;
+      message.textContent = 'Enter a valid year value';
       currentValid = false;
+      currentN = null;
     }
 
     function calculateAndDisplay() {
-      const raw = bcInput.value.trim();
+      const raw = yearInput.value.trim();
       const n = Number(raw);
-      const isValid = Number.isInteger(n) && n > 0;
-      if (!isValid) {
+      if (!Number.isFinite(n) || !Number.isInteger(n)) {
         showError();
         return;
       }
-      let ph = (n / 4) + 506;
-      ph = roundTo(ph, Number(roundingSelect.value));
-      currentPH = ph;
+      const phBase = getPH(n);
+      if (phBase === null) {
+        showError();
+        return;
+      }
+      const ph = roundTo(phBase, Number(roundingSelect.value));
       currentValid = true;
+      currentN = n;
       displayPH(ph);
     }
 
-    bcInput.addEventListener('keydown', (e) => {
+    yearInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         calculateAndDisplay();
@@ -210,9 +218,7 @@
     });
 
     roundingSelect.addEventListener('change', () => {
-      if (currentValid && currentPH !== null) {
-        calculateAndDisplay();
-      }
+      if (currentValid && currentN !== null) calculateAndDisplay();
     });
 
     modeToggle.addEventListener('change', () => {
